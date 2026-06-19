@@ -64,6 +64,7 @@ extension ConsoleListView {
 
     /// Clears stale focus state and re-requests primary focus when the console set changes.
     func handleConsoleIDsChange(_ consoleIDs: [String]) {
+        updateIndexedConsolesCache()
         if let lastFocusedConsoleID, !consoleIDs.contains(lastFocusedConsoleID) {
             self.lastFocusedConsoleID = nil
         }
@@ -84,10 +85,7 @@ extension ConsoleListView {
         }
 
         shouldRequestDeferredFocus = false
-        pendingFocusTask?.cancel()
-        pendingFocusTask = Task { @MainActor in
-            await Task.yield()
-            guard !Task.isCancelled else { return }
+        MainActorDeferredTask.schedule(task: &pendingFocusTask) {
             focusedTarget = preferredTarget
         }
     }

@@ -41,6 +41,21 @@ extension CloudLibrarySettingsView {
             .onMoveCommand(perform: requestSideRailEntryOnLeft)
 
             CloudLibrarySettingsActionButton(
+                title: previewExportTitle,
+                systemImage: "square.and.arrow.up"
+            ) {
+                startPreviewExport()
+            }
+            .onMoveCommand(perform: requestSideRailEntryOnLeft)
+
+            if let exportFeedback, !exportFeedback.isEmpty {
+                Text(exportFeedback)
+                    .font(StratixTypography.rounded(14, weight: .medium, dynamicTypeSize: dynamicTypeSize))
+                    .foregroundStyle(StratixTheme.Colors.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            CloudLibrarySettingsActionButton(
                 title: "Sign Out",
                 systemImage: "rectangle.portrait.and.arrow.right",
                 destructive: true,

@@ -11,9 +11,8 @@ import GameController
 #endif
 
 #if os(tvOS) && canImport(UIKit) && canImport(GameController)
-/// Root modal host for stream screens.
-/// Uses GCEventViewController as the presented root to intercept controller menu/back presses
-/// before tvOS dismisses the fullScreenCover.
+/// Stream input host for tvOS.
+/// Uses GCEventViewController to intercept controller menu/back presses before shell navigation sees them.
 struct StreamControllerInputHost<Content: View>: UIViewControllerRepresentable {
     let content: Content
     let onOverlayToggle: (() -> Void)?
@@ -54,8 +53,6 @@ final class StreamControllerInputViewController<Content: View>: GCEventViewContr
         super.viewDidLoad()
         view.backgroundColor = .clear
         view.insetsLayoutMarginsFromSafeArea = false
-        // Keep focus navigation enabled so launch-overlay controls remain selectable.
-        // Menu/back is still intercepted in pressesEnded below.
         controllerUserInteractionEnabled = true
 
         hostingController.view.backgroundColor = .clear
@@ -73,14 +70,23 @@ final class StreamControllerInputViewController<Content: View>: GCEventViewContr
         hostingController.didMove(toParent: self)
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        _ = becomeFirstResponder()
+    }
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         _ = becomeFirstResponder()
     }
 
+    override var preferredFocusEnvironments: [UIFocusEnvironment] {
+        [hostingController]
+    }
+
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
         if shouldHandleOverlayPress(presses) { return }
-        if shouldSwallowMenuPress(presses) { return }
+        if shouldSwallowBackPress(presses) { return }
         super.pressesBegan(presses, with: event)
     }
 
@@ -89,17 +95,17 @@ final class StreamControllerInputViewController<Content: View>: GCEventViewContr
             onOverlayToggle?()
             return
         }
-        if shouldSwallowMenuPress(presses) { return }
+        if shouldSwallowBackPress(presses) { return }
         super.pressesEnded(presses, with: event)
     }
 
     override func pressesCancelled(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
         if shouldHandleOverlayPress(presses) { return }
-        if shouldSwallowMenuPress(presses) { return }
+        if shouldSwallowBackPress(presses) { return }
         super.pressesCancelled(presses, with: event)
     }
 
-    private func shouldSwallowMenuPress(_ presses: Set<UIPress>) -> Bool {
+    private func shouldSwallowBackPress(_ presses: Set<UIPress>) -> Bool {
         presses.contains { $0.type == .menu }
     }
 

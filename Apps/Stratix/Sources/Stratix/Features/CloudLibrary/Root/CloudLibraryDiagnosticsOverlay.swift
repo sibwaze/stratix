@@ -13,52 +13,45 @@ struct CloudLibraryDiagnosticsOverlay: View {
 
     var body: some View {
         Group {
-            Text("home_merchandising_state")
-                .font(.caption2)
-                .foregroundStyle(.clear)
-                .frame(width: 1, height: 1)
-                .clipped()
-                .allowsHitTesting(false)
-                .accessibilityIdentifier("home_merchandising_state")
-                .accessibilityValue(homeMerchandisingStateValue)
-
-            Text("browse_route_state")
-                .font(.caption2)
-                .foregroundStyle(.clear)
-                .frame(width: 1, height: 1)
-                .clipped()
-                .allowsHitTesting(false)
-                .accessibilityIdentifier("browse_route_state")
-                .accessibilityValue(browseRouteRawValue)
-
-            Text("home_load_state")
-                .font(.caption2)
-                .foregroundStyle(.clear)
-                .frame(width: 1, height: 1)
-                .clipped()
-                .allowsHitTesting(false)
-                .accessibilityIdentifier("home_load_state")
-                .accessibilityValue(homeLoadStateValue)
-
-            Text("route_restore_state")
-                .font(.caption2)
-                .foregroundStyle(.clear)
-                .frame(width: 1, height: 1)
-                .clipped()
-                .allowsHitTesting(false)
-                .accessibilityIdentifier("route_restore_state")
-                .accessibilityValue(routeRestoreStateValue)
-
+            AccessibilityDiagnosticsMarker(
+                identifier: "home_merchandising_state",
+                value: homeMerchandisingStateValue
+            )
+            AccessibilityDiagnosticsMarker(
+                identifier: "browse_route_state",
+                value: browseRouteRawValue
+            )
+            AccessibilityDiagnosticsMarker(
+                identifier: "home_load_state",
+                value: homeLoadStateValue
+            )
+            AccessibilityDiagnosticsMarker(
+                identifier: "route_restore_state",
+                value: routeRestoreStateValue
+            )
             if homeMerchandisingReady {
-                Text("home_merchandising_ready")
-                    .font(.caption2)
-                    .foregroundStyle(.clear)
-                    .frame(width: 1, height: 1)
-                    .clipped()
-                    .allowsHitTesting(false)
-                    .accessibilityIdentifier("home_merchandising_ready")
-                    .accessibilityValue("ready")
+                AccessibilityDiagnosticsMarker(
+                    identifier: "home_merchandising_ready",
+                    value: "ready"
+                )
             }
         }
+    }
+}
+
+/// Hidden 1×1 accessibility marker used by shell UI tests and diagnostics overlays.
+struct AccessibilityDiagnosticsMarker: View {
+    let identifier: String
+    let value: String
+
+    var body: some View {
+        Text(identifier)
+            .font(.caption2)
+            .foregroundStyle(.clear)
+            .frame(width: 1, height: 1)
+            .clipped()
+            .allowsHitTesting(false)
+            .accessibilityIdentifier(identifier)
+            .accessibilityValue(value)
     }
 }

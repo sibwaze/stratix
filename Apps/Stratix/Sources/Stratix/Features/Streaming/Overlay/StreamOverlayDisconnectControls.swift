@@ -52,17 +52,10 @@ extension StreamOverlayDetailsPanel {
                 .background(Capsule().fill(Color.white.opacity(0.10)))
                 .overlay(Capsule().stroke(Color.white.opacity(0.14), lineWidth: 1))
         }
-        .foregroundStyle(Color.white)
+        .foregroundStyle(StratixTheme.Colors.textPrimary)
         .padding(.horizontal, 18)
         .frame(maxWidth: .infinity, minHeight: 70, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color.red.opacity(0.18))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.red.opacity(0.38), lineWidth: 1)
-        )
+        .streamStatusPanelBackground(cornerRadius: 20)
     }
 
     /// Renders the small close-key hint shown alongside the shortcut row.

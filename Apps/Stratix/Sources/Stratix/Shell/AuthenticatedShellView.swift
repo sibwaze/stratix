@@ -119,6 +119,29 @@ func authenticatedShellEffectiveProfileImageURL(
 }
 
 @MainActor
+/// Resolves the best Online/Offline label from live Xbox presence signals.
+func authenticatedShellResolvedPresenceStatus(from profileSnapshot: ProfileShellSnapshot) -> String? {
+    if profileSnapshot.isOnline {
+        return "Online"
+    }
+    if let liveState = profileSnapshot.presenceState?
+        .trimmingCharacters(in: .whitespacesAndNewlines),
+       !liveState.isEmpty {
+        if liveState.localizedCaseInsensitiveContains("offline") {
+            return "Offline"
+        }
+        if liveState.localizedCaseInsensitiveContains("online") {
+            return "Online"
+        }
+        if liveState.caseInsensitiveCompare("Unknown") == .orderedSame {
+            return nil
+        }
+        return liveState.capitalized
+    }
+    return nil
+}
+
+@MainActor
 /// Normalizes profile presence into the shell-facing Online or Offline status text.
 func authenticatedShellProfilePresenceStatus(
     profileSnapshot: ProfileShellSnapshot,
@@ -129,10 +152,18 @@ func authenticatedShellProfilePresenceStatus(
     if override == "Online" || override == "Offline" {
         return override
     }
-    if let liveState = profileSnapshot.presenceState,
-       !liveState.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        return liveState.capitalized
+
+    if profileSnapshot.isLoadingCurrentUserPresence {
+        if let resolved = authenticatedShellResolvedPresenceStatus(from: profileSnapshot) {
+            return resolved
+        }
+        return "Syncing…"
     }
+
+    if let resolved = authenticatedShellResolvedPresenceStatus(from: profileSnapshot) {
+        return resolved
+    }
+
     if libraryStatus.needsReauth {
         return "Offline"
     }

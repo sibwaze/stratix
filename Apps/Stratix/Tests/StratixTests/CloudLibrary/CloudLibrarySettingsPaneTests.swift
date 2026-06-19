@@ -12,7 +12,7 @@ final class CloudLibrarySettingsPaneTests: XCTestCase {
     func testResolvedPane_restoresStoredVisiblePane() {
         XCTAssertEqual(
             CloudLibrarySettingsBindings.resolvedPane(
-                currentPane: .overview,
+                currentPane: .stream,
                 storedRawValue: CloudLibrarySettingsPane.diagnostics.rawValue,
                 isAdvancedMode: true,
                 restoreStoredSelection: true
@@ -21,7 +21,7 @@ final class CloudLibrarySettingsPaneTests: XCTestCase {
         )
     }
 
-    func testResolvedPane_fallsBackToOverviewWhenStoredPaneIsHiddenInBasicMode() {
+    func testResolvedPane_fallsBackToStreamWhenStoredPaneIsHiddenInBasicMode() {
         XCTAssertEqual(
             CloudLibrarySettingsBindings.resolvedPane(
                 currentPane: .diagnostics,
@@ -29,7 +29,11 @@ final class CloudLibrarySettingsPaneTests: XCTestCase {
                 isAdvancedMode: false,
                 restoreStoredSelection: true
             ),
-            .overview
+            .stream
         )
+    }
+
+    func testFromStoredRawValue_migratesRetiredOverviewPane() {
+        XCTAssertEqual(CloudLibrarySettingsPane.fromStoredRawValue("overview"), .stream)
     }
 }

@@ -129,12 +129,12 @@ extension CloudLibraryLibraryScreen {
                                     focusedTarget = .filter(filter.id)
                                 case .down:
                                     if showsSearchNoMatches {
-                                        requestClearSearchFocus(scrollProxy: scrollProxy)
+                                        requestClearSearchFocus(scrollProxy: scrollProxy, focusDriven: true)
                                     } else {
-                                        requestGridFocus(scrollProxy: scrollProxy)
+                                        requestGridFocus(scrollProxy: scrollProxy, focusDriven: true)
                                     }
                                 case .up:
-                                    requestHeaderFocus(.searchField, scrollProxy: scrollProxy)
+                                    requestHeaderFocus(.searchField, scrollProxy: scrollProxy, focusDriven: true)
                                 default:
                                     break
                                 }
@@ -158,7 +158,7 @@ extension CloudLibraryLibraryScreen {
         direction: MoveCommandDirection,
         scrollProxy: ScrollViewProxy
     ) {
-        guard let index = state.tabs.firstIndex(where: { $0.id == tabID }) else { return }
+        guard let index = cachedTabIndexByID[tabID] else { return }
 
         switch direction {
         case .left:
@@ -184,9 +184,9 @@ extension CloudLibraryLibraryScreen {
 
     func requestFilterOrGridFocus(scrollProxy: ScrollViewProxy) {
         if let firstFilter = state.filters.first {
-            requestHeaderFocus(.filter(firstFilter.id), scrollProxy: scrollProxy)
+            requestHeaderFocus(.filter(firstFilter.id), scrollProxy: scrollProxy, focusDriven: true)
         } else {
-            requestGridFocus(scrollProxy: scrollProxy)
+            requestGridFocus(scrollProxy: scrollProxy, focusDriven: true)
         }
     }
 

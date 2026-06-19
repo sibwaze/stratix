@@ -14,7 +14,7 @@ enum CloudLibrarySettingsBindings {
         restoreStoredSelection: Bool
     ) -> CloudLibrarySettingsPane {
         let visiblePanes = CloudLibrarySettingsPane.visibleCases(isAdvanced: isAdvancedMode)
-        let storedPane = CloudLibrarySettingsPane(rawValue: storedRawValue)
+        let storedPane = CloudLibrarySettingsPane.fromStoredRawValue(storedRawValue)
 
         if restoreStoredSelection, let storedPane, visiblePanes.contains(storedPane) {
             return storedPane
@@ -22,7 +22,7 @@ enum CloudLibrarySettingsBindings {
         if visiblePanes.contains(currentPane) {
             return currentPane
         }
-        return storedPane.flatMap { visiblePanes.contains($0) ? $0 : nil } ?? visiblePanes.first ?? .overview
+        return storedPane.flatMap { visiblePanes.contains($0) ? $0 : nil } ?? visiblePanes.first ?? .stream
     }
 }
 

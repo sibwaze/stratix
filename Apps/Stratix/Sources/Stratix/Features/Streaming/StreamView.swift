@@ -17,11 +17,9 @@ struct StreamView: View {
     @Environment(StreamController.self) private var streamController
     @Environment(LibraryController.self) private var libraryController
     @Environment(SettingsStore.self) private var settingsStore
-    @Environment(\.dismiss) private var dismiss
     @State private var surfaceModel = StreamSurfaceModel()
     @State private var renderSurfaceCoordinator = RenderSurfaceCoordinator()
     @State private var rendererAttachmentCoordinator = RendererAttachmentCoordinator()
-
     /// Reads the current stream-related user settings from the shared settings store.
     private var streamSettings: SettingsStore.StreamSettings {
         settingsStore.stream
@@ -59,7 +57,8 @@ struct StreamView: View {
             lifecycle: currentStreamLifecycle,
             overlayInfo: overlayInfo,
             overlayVisible: overlayVisible,
-            hasSession: streamController.streamingSession != nil
+            hasSession: streamController.streamingSession != nil,
+            isReconnecting: streamController.isReconnecting
         )
     }
 
@@ -71,6 +70,12 @@ struct StreamView: View {
         .ignoresSafeArea()
         .onAppear {
             renderSurfaceCoordinator.resetExitGuard()
+            streamController.registerReconnectBridgeProvider { [renderSurfaceCoordinator, surfaceModel] in
+                await renderSurfaceCoordinator.bridgeForRelaunch(
+                    surfaceModel: surfaceModel,
+                    session: streamController.streamingSession
+                )
+            }
         }
         .task {
             await startStreamIfNeeded()
@@ -97,10 +102,15 @@ struct StreamView: View {
         .onChange(of: settingsStore.stream.showStreamStats) { _, _ in
             syncDiagnosticsPolling()
         }
+        .task(id: streamController.isReconnecting) {
+            await runReconnectCountdown(isActive: streamController.isReconnecting)
+        }
         .onDisappear {
+            streamController.registerReconnectBridgeProvider(nil)
             renderSurfaceCoordinator.handleDisappear(
                 session: streamController.streamingSession,
                 surfaceModel: surfaceModel,
+                shouldTearDownSession: !streamController.isStreamPriorityModeActive,
                 clearAttachment: { rendererAttachmentCoordinator.clear() },
                 setOverlayVisible: { visible, trigger in
                     await streamController.setOverlayVisible(visible, trigger: trigger)
@@ -115,8 +125,7 @@ struct StreamView: View {
             }
         }
         .onExitCommand {
-            // Do not use controller B/Menu as an in-game escape shortcut.
-            // Keep it available to the stream; if the overlay is open, treat Exit as "close overlay".
+            // Always consume Menu/Back while streaming. Only the overlay dismisses on Back.
             guard overlayVisible else { return }
             Task {
                 await streamController.setOverlayVisible(false, trigger: .explicitDismiss)
@@ -142,20 +151,18 @@ struct StreamView: View {
                 videoSurface(proxy: proxy)
             }
 
-            if let session {
-                sessionOverlay(session: session)
-            } else if streamController.showsReconnectPrompt {
-                StreamReconnectPromptOverlay(
+            if streamController.showsReconnectControl {
+                StreamDisconnectedOverlay(
                     overlayInfo: overlayInfo,
-                    attemptCount: streamController.reconnectAttemptCount,
+                    statusTitle: reconnectOverlayStatusTitle,
+                    summary: reconnectOverlaySummary,
                     onReconnect: {
                         Task { await retryActiveStream() }
-                    },
-                    onExit: {
-                        requestStreamExit()
                     }
                 )
-            } else {
+            } else if let session {
+                sessionOverlay(session: session)
+            } else if shouldShowPreparingOverlay {
                 StreamPreparingOverlay(overlayInfo: overlayInfo) {
                     cancelStreamLaunch()
                 }
@@ -175,7 +182,7 @@ struct StreamView: View {
             }
 
             if streamController.isReconnecting {
-                reconnectBanner
+                StreamReconnectStatusBanner()
             }
         }
     }
@@ -222,6 +229,10 @@ struct StreamView: View {
         streamController.streamingSession?.lifecycle ?? .idle
     }
 
+    private var shouldShowPreparingOverlay: Bool {
+        !streamController.isReconnecting && streamController.streamingSession == nil
+    }
+
     /// Creates the active WebRTC-backed video surface with the current renderer callbacks attached.
     private func videoSurface(proxy: GeometryProxy) -> some View {
         WebRTCVideoSurfaceView(
@@ -255,7 +266,7 @@ struct StreamView: View {
             cancelStreamLaunch()
         }
 
-        if case .failed(let error) = session.lifecycle {
+        if case .failed(let error) = session.lifecycle, shouldShowStreamFailurePanel {
             VStack {
                 Spacer()
                 VStack(alignment: .leading, spacing: 8) {
@@ -272,30 +283,35 @@ struct StreamView: View {
                 }
                 .padding(14)
                 .frame(maxWidth: 720, alignment: .leading)
-                .background(Color.black.opacity(0.7))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .streamStatusPanelBackground(cornerRadius: 12)
                 .padding(.bottom, 40)
             }
             .padding(.horizontal, 40)
         }
     }
 
-    private var reconnectBanner: some View {
-        VStack {
-            Spacer()
-            HStack(spacing: 12) {
-                ProgressView()
-                    .tint(.white)
-                Text("Reconnecting… (\(streamController.reconnectAttemptCount)/\(streamController.reconnectMaxAttempts))")
-                    .font(.callout.bold())
-                    .foregroundStyle(.white)
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 14)
-            .background(Color.black.opacity(0.78))
-            .clipShape(Capsule())
-            .padding(.bottom, 52)
+    private var shouldShowStreamFailurePanel: Bool {
+        guard !streamController.isReconnecting else { return false }
+        guard streamSettings.autoReconnect else { return true }
+        guard streamController.lastDisconnectIntent != .userInitiated,
+              streamController.lastDisconnectIntent != .inactivityTimeout else { return true }
+        return streamController.lastReconnectSuppressionReason == .attemptsExhausted
+            || streamController.lastReconnectSuppressionReason == .autoReconnectDisabled
+    }
+
+    private var reconnectOverlayStatusTitle: String {
+        if let lifecycle = streamController.streamingSession?.lifecycle {
+            return lifecycle.overlayStateLabel
         }
+        return "Disconnected"
+    }
+
+    private var reconnectOverlaySummary: String {
+        let attempts = streamController.reconnectAttemptCount
+        if attempts > 0 {
+            return "Connection lost after \(attempts) automatic reconnect attempt\(attempts == 1 ? "" : "s"). Select Reconnect to restore the stream."
+        }
+        return "Connection lost. Select Reconnect to restore the stream."
     }
 
     private var overlayInfo: StreamOverlayInfo {
@@ -325,7 +341,6 @@ struct StreamView: View {
 
     @MainActor
     private func requestStreamExit() {
-        onStreamExit?()
         renderSurfaceCoordinator.requestExit(
             session: streamController.streamingSession,
             setOverlayVisible: { visible, trigger in
@@ -333,13 +348,13 @@ struct StreamView: View {
             },
             stopStreaming: { await streamController.stopStreaming() },
             exitPriorityMode: { await streamController.exitStreamPriorityMode() },
-            dismiss: { dismiss() }
+            dismiss: { onStreamExit?() }
         )
     }
 
     @MainActor
     private func retryActiveStream() async {
-        let bridge = renderSurfaceCoordinator.bridgeForRelaunch(
+        let bridge = await renderSurfaceCoordinator.bridgeForRelaunch(
             surfaceModel: surfaceModel,
             session: streamController.streamingSession
         )
@@ -368,6 +383,16 @@ struct StreamView: View {
         case .toggleStatsHUD:
             updateStreamSettings { $0.showStreamStats.toggle() }
         }
+    }
+
+    @MainActor
+    private func runReconnectCountdown(isActive: Bool) async {
+        guard isActive else { return }
+
+        let timeoutSeconds = streamController.reconnectTotalWindowSeconds
+        try? await Task.sleep(for: .seconds(timeoutSeconds))
+        guard !Task.isCancelled, streamController.isReconnecting else { return }
+        await streamController.expireAutoReconnectWindow()
     }
 
     @MainActor

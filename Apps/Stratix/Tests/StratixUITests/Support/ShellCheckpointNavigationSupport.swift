@@ -151,6 +151,32 @@ extension ShellCheckpointUITestCase {
     }
 
     @MainActor
+    func selectLibrarySearchTab(in app: XCUIApplication) {
+        selectSideRailNav("side_rail_nav_library", in: app)
+        let searchTab = app.buttons["library_tab_search"]
+        XCTAssertTrue(searchTab.waitForExistence(timeout: 8), "Library Search tab should exist")
+
+        for _ in 0..<10 {
+            if searchTab.hasFocus {
+                break
+            }
+            XCUIRemote.shared.press(.right)
+            settleUI(0.05)
+        }
+
+        XCUIRemote.shared.press(.select)
+        XCTAssertTrue(
+            routeRoot("route_library_root", in: app).waitForExistence(timeout: 8),
+            "Library route should remain visible when search is activated"
+        )
+        XCTAssertTrue(
+            app.otherElements["route_search_root"].waitForExistence(timeout: 8)
+                || app.textFields["library_search_field"].waitForExistence(timeout: 8),
+            "Inline search field should appear inside the library route"
+        )
+    }
+
+    @MainActor
     func dismissSearchKeyboardIfPresent(in app: XCUIApplication) {
         guard routeRoot("route_search_root", in: app).exists else { return }
         guard focusedGameTile(in: app) == nil, focusedSideRailNav(in: app) == nil else { return }

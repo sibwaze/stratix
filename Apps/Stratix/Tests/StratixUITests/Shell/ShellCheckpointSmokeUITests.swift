@@ -77,7 +77,8 @@ final class ShellCheckpointSmokeUITests: ShellCheckpointUITestCase {
         if routeRoot("route_search_root", in: smokeApp).exists {
             searchRoot = routeRoot("route_search_root", in: smokeApp)
         } else {
-            searchRoot = selectRoute("side_rail_nav_search", expectedRoot: "route_search_root", in: smokeApp, timeout: 12)
+            selectLibrarySearchTab(in: smokeApp)
+            searchRoot = routeRoot("route_search_root", in: smokeApp)
         }
 
         let searchField = waitForSearchField(in: smokeApp, timeout: 20)

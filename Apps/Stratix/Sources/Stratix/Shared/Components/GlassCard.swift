@@ -30,26 +30,12 @@ struct GlassCard<Content: View>: View {
 
     var body: some View {
         content
-            .background(
-                glassSurface
-            )
+            .background(stratixGlassSurface(cornerRadius: cornerRadius, fill: fill))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(stroke, lineWidth: 1)
             )
             .shadow(color: .black.opacity(shadowOpacity), radius: 30, x: 0, y: 18)
-    }
-
-    /// Switches between system glass material and the repo's legacy filled-card fallback.
-    @ViewBuilder
-    private var glassSurface: some View {
-        if #available(tvOS 26.0, *) {
-            Color.clear
-                .glassEffect(.regular.tint(fill), in: .rect(cornerRadius: cornerRadius))
-        } else {
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(fill)
-        }
     }
 }
 
@@ -74,23 +60,23 @@ struct GlassBubble<Content: View>: View {
 
     var body: some View {
         content
-            .background(glassSurface)
+            .background(stratixGlassSurface(cornerRadius: cornerRadius, fill: fill))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(stroke, lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.32), radius: 10, x: 0, y: 4)
     }
+}
 
-    @ViewBuilder
-    private var glassSurface: some View {
-        if #available(tvOS 26.0, *) {
-            Color.clear
-                .glassEffect(.regular.tint(fill), in: .rect(cornerRadius: cornerRadius))
-        } else {
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(fill)
-        }
+@ViewBuilder
+private func stratixGlassSurface(cornerRadius: CGFloat, fill: Color) -> some View {
+    if #available(tvOS 26.0, *) {
+        Color.clear
+            .glassEffect(.regular.tint(fill), in: .rect(cornerRadius: cornerRadius))
+    } else {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(fill)
     }
 }
 

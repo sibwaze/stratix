@@ -5,6 +5,7 @@
 struct CloudLibraryUtilityRouteActions {
     let openConsoles: @MainActor () -> Void
     let openSettings: @MainActor () -> Void
+    let refreshProfileMetadata: @MainActor () -> Void
     let refreshProfileData: @MainActor () -> Void
     let refreshFriends: @MainActor () -> Void
     let refreshCloudLibrary: @MainActor () -> Void

@@ -39,15 +39,15 @@ struct ConsoleCardView: View {
                         }
 
                         HStack(spacing: 10) {
-                            consolePill(icon: "play.fill", text: "Remote Play")
+                            ConsoleInfoPill(icon: "play.fill", text: "Remote Play")
                             if console.outOfHomeWarning {
-                                consolePill(icon: "house.slash.fill", text: "Out-of-home limits", style: .warning)
+                                ConsoleInfoPill(icon: "house.slash.fill", text: "Out-of-home limits", style: .warning)
                             }
                             if console.wirelessWarning {
-                                consolePill(icon: "wifi.exclamationmark", text: "Wireless warning", style: .warning)
+                                ConsoleInfoPill(icon: "wifi.exclamationmark", text: "Wireless warning", style: .warning)
                             }
                             if console.isDevKit {
-                                consolePill(icon: "hammer.fill", text: "DevKit", style: .neutral)
+                                ConsoleInfoPill(icon: "hammer.fill", text: "DevKit")
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -144,14 +144,21 @@ struct ConsoleCardView: View {
         .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 1))
     }
 
-    private enum ConsolePillStyle {
-        case neutral
-        case warning
-    }
+}
 
-    private func consolePill(icon: String, text: String, style: ConsolePillStyle = .neutral) -> some View {
+enum ConsoleInfoPillStyle {
+    case neutral
+    case warning
+}
+
+struct ConsoleInfoPill: View {
+    let icon: String
+    let text: String
+    var style: ConsoleInfoPillStyle = .neutral
+
+    var body: some View {
         let foreground: Color = style == .warning ? Color.orange : StratixTheme.Colors.textSecondary
-        return HStack(spacing: 6) {
+        HStack(spacing: 6) {
             Image(systemName: icon)
             Text(text)
                 .lineLimit(1)

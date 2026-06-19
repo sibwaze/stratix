@@ -15,7 +15,8 @@ struct StreamOverlayStateTests {
             lifecycle: .connected,
             overlayInfo: .cloud(item: nil),
             overlayVisible: true,
-            hasSession: true
+            hasSession: true,
+            isReconnecting: false
         )
 
         #expect(state.showsConnectionOverlay == false)
@@ -28,7 +29,8 @@ struct StreamOverlayStateTests {
             lifecycle: .connectingWebRTC,
             overlayInfo: .cloud(item: nil),
             overlayVisible: false,
-            hasSession: true
+            hasSession: true,
+            isReconnecting: false
         )
 
         #expect(state.showsConnectionOverlay == true)
@@ -41,13 +43,15 @@ struct StreamOverlayStateTests {
             lifecycle: .connected,
             overlayInfo: .cloud(item: nil),
             overlayVisible: false,
-            hasSession: true
+            hasSession: true,
+            isReconnecting: false
         )
         let missingSession = StreamOverlayState(
             lifecycle: .connected,
             overlayInfo: .cloud(item: nil),
             overlayVisible: true,
-            hasSession: false
+            hasSession: false,
+            isReconnecting: false
         )
 
         #expect(hidden.showsDetailsPanel == false)

@@ -44,6 +44,8 @@ struct SideRailNavigationView: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 accountClusterView
+                    .padding(.top, max(0, StratixTheme.Shell.profileAccountSortAlignmentInset))
+                    .offset(y: min(0, StratixTheme.Shell.profileAccountSortAlignmentInset))
                 Spacer(minLength: 0)
 
                 navListView

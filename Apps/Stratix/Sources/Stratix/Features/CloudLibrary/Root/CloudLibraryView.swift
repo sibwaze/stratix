@@ -48,26 +48,49 @@ struct CloudLibraryView: View {
     }
     // MARK: - Body
 
-    /// Mounts the shell and presents the full-screen stream surface when a launch succeeds.
+    /// Mounts the shell and layers the stream surface above it when a launch succeeds.
     var body: some View {
-        mountedShell
-        .fullScreenCover(item: $activeStreamContext, onDismiss: handleActiveStreamDismissed) { ctx in
-            StreamControllerInputHost(onOverlayToggle: {
-                streamController.requestOverlayToggle()
-            }) {
-                StreamView(context: ctx, onStreamExit: {
-                    activeStreamContext = nil
-                })
+        ZStack {
+            mountedShell
+
+            if let ctx = activeStreamContext {
+                streamPresentation(for: ctx)
             }
-            .ignoresSafeArea()
-            .interactiveDismissDisabled(true)
+        }
+        .onExitCommand(perform: handleRootExitCommand)
+    }
+
+    /// Presents the live stream above the shell without a modal `fullScreenCover`.
+    /// tvOS always dismisses that modal on Menu/Back, which was ejecting players mid-session.
+    @ViewBuilder
+    private func streamPresentation(for context: StreamContext) -> some View {
+        StreamControllerInputHost(onOverlayToggle: {
+            streamController.requestOverlayToggle()
+        }) {
+            StreamView(context: context, onStreamExit: {
+                Task { @MainActor in
+                    await finishStreamExit()
+                }
+            })
+        }
+        .ignoresSafeArea()
+        .streamPresentationFocusCapture()
+    }
+
+    private func handleRootExitCommand() {
+        // Always consume Menu/Back while streaming. Only the overlay dismisses on Back.
+        guard activeStreamContext != nil else { return }
+        guard streamController.isStreamOverlayVisible else { return }
+        Task {
+            await streamController.setOverlayVisible(false, trigger: .explicitDismiss)
         }
     }
 
     /// Builds the routed shell host with the current controller snapshots and refresh closures.
     private var mountedShell: some View {
+        let isStreamPresentationActive = activeStreamContext != nil
         let visibility = Self.rootShellVisibility(
-            isStreamPriorityModeActive: streamController.isStreamPriorityModeActive
+            isStreamPriorityModeActive: isStreamPresentationActive
         )
 
         return CloudLibraryShellHost(
@@ -77,6 +100,7 @@ struct CloudLibraryView: View {
             presentationStore: presentationStore,
             layoutPolicy: layoutPolicy,
             backActionPolicy: backActionPolicy,
+            isStreamPresentationActive: isStreamPresentationActive,
             shellInteractionCoordinator: shellInteractionCoordinator,
             stateSnapshot: stateSnapshot,
             loadState: loadState,
@@ -91,6 +115,7 @@ struct CloudLibraryView: View {
             launchCloudStream: launchCloudStream,
             refreshCloudLibrary: refreshCloudLibrary,
             refreshConsoles: refreshConsoles,
+            refreshProfileMetadata: refreshProfileMetadata,
             refreshProfile: refreshProfileData,
             refreshFriends: refreshFriends,
             signOut: signOutFromShell,
@@ -114,6 +139,7 @@ struct CloudLibraryView: View {
         .opacity(visibility.opacity)
         .allowsHitTesting(visibility.allowsHitTesting)
         .accessibilityHidden(visibility.isAccessibilityHidden)
+        .disabled(activeStreamContext != nil)
         .overlay(alignment: .topLeading) {
             CloudLibraryDiagnosticsOverlay(
                 browseRouteRawValue: routeState.browseRoute.rawValue,
@@ -141,7 +167,7 @@ struct CloudLibraryView: View {
             )
         }
         .task(id: sceneModel.statusMutationTaskID(
-            isHomeRoute: routeState.browseRoute == .home,
+            isHomeRoute: routeState.browseRoute.isHome,
             loadState: loadState,
             sections: stateSnapshot.sections,
             hasCompletedInitialHomeMerchandising: stateSnapshot.hasCompletedInitialHomeMerchandising,
@@ -242,7 +268,7 @@ struct CloudLibraryView: View {
     private var selectedSettingsPaneBinding: Binding<CloudLibrarySettingsPane> {
         Binding(
             get: {
-                CloudLibrarySettingsPane(rawValue: settingsStore.shell.lastSettingsCategoryRawValue) ?? .overview
+                CloudLibrarySettingsPane.fromStoredRawValue(settingsStore.shell.lastSettingsCategoryRawValue) ?? .stream
             },
             set: { pane in
                 var shell = settingsStore.shell
@@ -280,15 +306,16 @@ struct CloudLibraryView: View {
         }
     }
 
-    private func handleActiveStreamDismissed() {
-        Task { @MainActor in
-            await actionCoordinator.handleStreamDismiss(
-                browseRoute: routeState.browseRoute,
-                stopStreaming: { await streamController.stopStreaming() },
-                exitPriorityMode: { await streamController.exitStreamPriorityMode() },
-                requestTopContentFocus: { focusState.requestTopContentFocus(for: $0) }
-            )
-        }
+    @MainActor
+    private func finishStreamExit() async {
+        guard activeStreamContext != nil else { return }
+        activeStreamContext = nil
+        await actionCoordinator.handleStreamDismiss(
+            browseRoute: routeState.browseRoute,
+            stopStreaming: { await streamController.stopStreaming() },
+            exitPriorityMode: { await streamController.exitStreamPriorityMode() },
+            requestTopContentFocus: { focusState.requestTopContentFocus(for: $0) }
+        )
     }
 
     // MARK: - Data Loading
@@ -303,6 +330,12 @@ struct CloudLibraryView: View {
     private func refreshConsoles() async {
         await actionCoordinator.refreshConsoles(
             consoleService: consoleController
+        )
+    }
+
+    private func refreshProfileMetadata() async {
+        await actionCoordinator.refreshProfileMetadata(
+            profileService: profileController
         )
     }
 
@@ -346,7 +379,7 @@ struct CloudLibraryView: View {
 #Preview("CloudLibraryView", traits: .fixedLayout(width: 1920, height: 1080)) {
     let settingsStore = StratixPreviewStores.makeSettingsStore(
         profileName: "stratix-preview",
-        initialSettingsCategory: CloudLibrarySettingsPane.overview.rawValue
+        initialSettingsCategory: CloudLibrarySettingsPane.stream.rawValue
     )
     let coordinator = StratixPreviewStores.makeCoordinator(settingsStore: settingsStore)
     return CloudLibraryView()

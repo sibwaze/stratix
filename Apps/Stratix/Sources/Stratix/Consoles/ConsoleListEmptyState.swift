@@ -50,9 +50,9 @@ extension ConsoleListView {
                                 .fixedSize(horizontal: false, vertical: true)
 
                             HStack(spacing: 10) {
-                                consoleInfoPill(icon: "tv.fill", text: "Console on")
-                                consoleInfoPill(icon: "gearshape.fill", text: "Remote features enabled")
-                                consoleInfoPill(icon: "wifi", text: "Network reachable")
+                                ConsoleInfoPill(icon: "tv.fill", text: "Console on")
+                                ConsoleInfoPill(icon: "gearshape.fill", text: "Remote features enabled")
+                                ConsoleInfoPill(icon: "wifi", text: "Network reachable")
                             }
                             .padding(.top, 2)
 
@@ -172,26 +172,12 @@ extension ConsoleListView {
                 }
                 .frame(maxWidth: 1120, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .center)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 8)
             .padding(.bottom, 18)
         }
         .scrollIndicators(.hidden)
     }
-}
-
-private func consoleInfoPill(icon: String, text: String) -> some View {
-    HStack(spacing: 6) {
-        Image(systemName: icon)
-        Text(text)
-            .lineLimit(1)
-    }
-    .font(.system(size: 13, weight: .bold, design: .rounded))
-    .foregroundStyle(StratixTheme.Colors.textSecondary)
-    .padding(.horizontal, 10)
-    .padding(.vertical, 6)
-    .background(Capsule().fill(Color.white.opacity(0.05)))
-    .overlay(Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1))
 }
 
 private func consoleChecklistRow(icon: String, text: String) -> some View {

@@ -5,6 +5,11 @@
 import SwiftUI
 
 extension SideRailNavigationView {
+    /// Profile owns settings in the shell, so both utility routes keep the account cluster selected.
+    var isProfileClusterSelected: Bool {
+        activeUtilityRoute == .profile || activeUtilityRoute == .settings
+    }
+
     /// Top account/profile entry point for the side rail, sharing the same collapse-to-content behavior as the rest of the rail.
     var accountClusterView: some View {
         Button {
@@ -19,7 +24,7 @@ extension SideRailNavigationView {
                     .background(
                         Circle()
                             .fill(
-                                activeUtilityRoute == .profile
+                                isProfileClusterSelected
                                     ? StratixTheme.Colors.focusTint.opacity(isFocused ? 0.88 : 0.72)
                                     : (isFocused ? Color.white.opacity(0.14) : Color.clear)
                             )
@@ -27,14 +32,18 @@ extension SideRailNavigationView {
                     .overlay(
                         Circle()
                             .stroke(
-                                activeUtilityRoute == .profile
+                                isProfileClusterSelected
                                     ? Color.white.opacity(isFocused ? 0.28 : 0.18)
                                     : Color.white.opacity(isFocused ? 0.22 : 0.10),
                                 lineWidth: 1
                             )
                     )
                     .gamePassFocusRing(isFocused: isFocused, cornerRadius: 26)
-                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .center)
+                    .frame(
+                        maxWidth: .infinity,
+                        minHeight: StratixTheme.Shell.profileAccountClusterHeight,
+                        alignment: .center
+                    )
             }
         }
         .buttonStyle(CloudLibraryTVButtonStyle())
@@ -44,7 +53,7 @@ extension SideRailNavigationView {
         .accessibilityIdentifier("side_rail_action_profile_menu")
         .accessibilityLabel(Text("\(state.accountName), \(state.accountStatus)"))
         .accessibilityHint(Text("Open profile menu"))
-        .accessibilityValue(Text(activeUtilityRoute == .profile ? "selected" : "not_selected"))
+        .accessibilityValue(Text(isProfileClusterSelected ? "selected" : "not_selected"))
         .onMoveCommand { direction in
             if direction == .right {
                 moveFocusToContent()

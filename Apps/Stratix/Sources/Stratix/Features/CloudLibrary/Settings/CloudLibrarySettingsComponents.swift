@@ -277,13 +277,16 @@ struct CloudLibraryStatPill: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        Label(text, systemImage: icon)
-            .font(StratixTypography.rounded(16, weight: .bold, dynamicTypeSize: dynamicTypeSize))
-            .foregroundStyle(StratixTheme.Colors.textSecondary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Capsule().fill(Color.white.opacity(0.05)))
-            .overlay(Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1))
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+            Text(text)
+        }
+        .font(StratixTypography.rounded(16, weight: .bold, dynamicTypeSize: dynamicTypeSize))
+        .foregroundStyle(StratixTheme.Colors.textSecondary)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Capsule().fill(Color.white.opacity(0.05)))
+        .overlay(Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1))
     }
 }
 

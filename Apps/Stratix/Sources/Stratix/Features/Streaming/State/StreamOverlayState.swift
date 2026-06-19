@@ -15,10 +15,11 @@ struct StreamOverlayState: Equatable {
     let overlayInfo: StreamOverlayInfo
     let overlayVisible: Bool
     let hasSession: Bool
+    let isReconnecting: Bool
 
     /// Indicates whether the connection-status overlay should be visible.
     var showsConnectionOverlay: Bool {
-        lifecycle.isAwaitingOverlayConnection
+        !isReconnecting && lifecycle.isAwaitingOverlayConnection
     }
 
     /// Indicates whether the active session has enough state to show the details panel.

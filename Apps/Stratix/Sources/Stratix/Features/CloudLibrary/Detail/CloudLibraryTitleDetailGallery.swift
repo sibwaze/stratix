@@ -9,6 +9,14 @@ import UIKit
 import CryptoKit
 #endif
 
+private enum GalleryMediaPlaceholder {
+    static let gradient = LinearGradient(
+        colors: [Color.white.opacity(0.1), Color.white.opacity(0.03)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+}
+
 extension CloudLibraryTitleDetailScreen {
     var gallerySection: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -26,7 +34,8 @@ extension CloudLibraryTitleDetailScreen {
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(Array(state.gallery.enumerated()), id: \.element.id) { index, item in
+                        ForEach(state.gallery.indices, id: \.self) { index in
+                            let item = state.gallery[index]
                             GalleryThumbnailView(
                                 item: item,
                                 onSelect: {
@@ -105,11 +114,7 @@ private struct GalleryThumbnailView: View {
                 maxPixelSize: 1_024,
                 onImageLoaded: onMediaReady
             ) {
-                LinearGradient(
-                    colors: [Color.white.opacity(0.1), Color.white.opacity(0.03)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                GalleryMediaPlaceholder.gradient
             }
         case .video:
             VideoThumbnailFrameView(
@@ -124,11 +129,7 @@ private struct GalleryThumbnailView: View {
 private struct GalleryLoadingCardView: View {
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color.white.opacity(0.1), Color.white.opacity(0.03)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            GalleryMediaPlaceholder.gradient
             .overlay(
                 HStack(spacing: 10) {
                     ProgressView()
@@ -186,11 +187,7 @@ private struct VideoThumbnailFrameView: View {
     }
 
     private var placeholder: some View {
-        LinearGradient(
-            colors: [Color.white.opacity(0.1), Color.white.opacity(0.03)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        GalleryMediaPlaceholder.gradient
     }
 
     @MainActor
@@ -198,7 +195,7 @@ private struct VideoThumbnailFrameView: View {
         if Task.isCancelled { return }
         if let cached = await VideoFrameThumbnailCache.shared.image(for: videoURL) {
             if Task.isCancelled { return }
-            frameImage = cached
+            applyFrameImage(cached)
             return
         }
 
@@ -208,7 +205,13 @@ private struct VideoThumbnailFrameView: View {
 
         await VideoFrameThumbnailCache.shared.setImage(extracted, for: videoURL)
         if Task.isCancelled { return }
-        frameImage = extracted
+        applyFrameImage(extracted)
+    }
+
+    @MainActor
+    private func applyFrameImage(_ image: UIImage) {
+        frameImage = image
+        onReady()
     }
 }
 

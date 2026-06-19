@@ -23,7 +23,6 @@ enum CloudLibraryPreviewData {
         profileImageURL: capturedProfileImageURL,
         profileInitials: "D",
         navItems: [
-            .init(id: .search, title: "Search", systemImage: "magnifyingglass"),
             .init(id: .home, title: "Home", systemImage: "house.fill"),
             .init(id: .library, title: "Library", systemImage: "square.grid.2x2.fill", badgeText: "\(capturedCloudLibraryTotal)"),
             .init(id: .consoles, title: "Local", systemImage: "tv.fill", badgeText: "\(capturedConsoleTotal)")

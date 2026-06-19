@@ -91,7 +91,8 @@ private struct StreamStatusOverlayPreviewHost: View {
                     lifecycle: lifecycle,
                     overlayInfo: StreamOverlayInfo.cloud(item: nil),
                     overlayVisible: showOverlay,
-                    hasSession: true
+                    hasSession: true,
+                    isReconnecting: false
                 ),
                 session: session,
                 surfaceModel: surfaceModel,

@@ -80,10 +80,7 @@ struct AuthView: View {
         }
         .accessibilityIdentifier("auth_root")
         .onAppear {
-            pendingFocusTask?.cancel()
-            pendingFocusTask = Task { @MainActor in
-                await Task.yield()
-                guard !Task.isCancelled else { return }
+            MainActorDeferredTask.schedule(task: &pendingFocusTask) {
                 isSignInFocused = true
             }
         }

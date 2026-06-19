@@ -45,8 +45,4 @@ extension CloudLibrarySettingsView {
             }
         }
     }
-
-    private var previewExportTitle: String {
-        isExportingPreviewDump ? "Exporting Preview Dump" : "Export Preview Dump"
-    }
 }

@@ -3,6 +3,14 @@
 //
 
 import SwiftUI
+import XCloudAPI
+
+struct IndexedConsole: Identifiable {
+    let index: Int
+    let console: RemoteConsole
+
+    var id: String { console.serverId }
+}
 
 enum ConsoleGridSection {
     static func columnCount(for width: CGFloat) -> Int {
@@ -28,13 +36,13 @@ extension ConsoleListView {
     var consoleGrid: some View {
         ScrollView {
             LazyVGrid(columns: consoleGridColumns, spacing: 28) {
-                ForEach(Array(consoleController.consoles.enumerated()), id: \.element.serverId) { index, console in
-                    ConsoleCardView(console: console) {
-                        launchHomeStream(console)
+                ForEach(cachedIndexedConsoles) { entry in
+                    ConsoleCardView(console: entry.console) {
+                        launchHomeStream(entry.console)
                     }
-                    .focused($focusedTarget, equals: .console(console.serverId))
+                    .focused($focusedTarget, equals: .console(entry.console.serverId))
                     .onMoveCommand { direction in
-                        guard direction == .left, isLeadingGridColumn(index: index) else { return }
+                        guard direction == .left, isLeadingGridColumn(index: entry.index) else { return }
                         onRequestSideRailEntry()
                     }
                 }
@@ -65,5 +73,14 @@ extension ConsoleListView {
 
     func isLeadingGridColumn(index: Int) -> Bool {
         ConsoleGridSection.isLeadingColumn(index: index, columnCount: consoleGridColumns.count)
+    }
+
+    func updateIndexedConsolesCache() {
+        let consoles = consoleController.consoles
+        let serverIDs = consoles.map(\.serverId)
+        guard serverIDs != cachedIndexedConsoles.map(\.id) else { return }
+        cachedIndexedConsoles = consoles.enumerated().map { index, console in
+            IndexedConsole(index: index, console: console)
+        }
     }
 }

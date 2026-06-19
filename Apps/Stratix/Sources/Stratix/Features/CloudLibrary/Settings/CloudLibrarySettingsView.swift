@@ -18,8 +18,6 @@ struct CloudLibrarySettingsView: View {
     let consoleCount: Int
     let isLoadingCloudLibrary: Bool
     let regionOverrideDiagnostics: String?
-    var onRefreshCloudLibrary: () -> Void = {}
-    var onRefreshConsoles: () -> Void = {}
     var onSignOut: () -> Void = {}
     var onRequestSideRailEntry: () -> Void = {}
     var isSideRailExpanded: Bool = false
@@ -77,8 +75,6 @@ struct CloudLibrarySettingsView: View {
 
                 VStack(alignment: .leading, spacing: 18) {
                     switch selectedPane {
-                    case .overview:
-                        overviewPane
                     case .stream:
                         streamPane
                     case .controller:
@@ -171,6 +167,10 @@ struct CloudLibrarySettingsView: View {
         settingsStore.shell = shell
     }
 
+    var previewExportTitle: String {
+        isExportingPreviewDump ? "Exporting Preview Dump" : "Export Preview Dump"
+    }
+
     func startPreviewExport() {
         exportTask?.cancel()
         isExportingPreviewDump = true
@@ -185,7 +185,7 @@ struct CloudLibrarySettingsView: View {
 
 #if DEBUG
 private struct CloudLibrarySettingsPreviewHost: View {
-    @State private var pane: CloudLibrarySettingsPane = .overview
+    @State private var pane: CloudLibrarySettingsPane = .stream
     @State private var coordinator = AppCoordinator()
 
     var body: some View {

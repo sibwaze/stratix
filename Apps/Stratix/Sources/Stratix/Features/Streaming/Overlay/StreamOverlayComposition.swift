@@ -79,50 +79,91 @@ struct StreamLaunchArtworkView: View {
     }
 }
 
-/// Prompts the player to manually retry after automatic reconnect attempts are exhausted.
-struct StreamReconnectPromptOverlay: View {
+/// Full-screen disconnect overlay with launch chrome and a bottom-center Reconnect action.
+struct StreamDisconnectedOverlay: View {
     let overlayInfo: StreamOverlayInfo
-    let attemptCount: Int
+    let statusTitle: String
+    let summary: String
     let onReconnect: () -> Void
-    let onExit: () -> Void
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Connection Lost")
-                .font(.system(size: 34, weight: .heavy, design: .rounded))
-                .foregroundStyle(Color.white)
+        ZStack {
+            StreamLaunchArtworkView(imageURL: overlayInfo.imageURL)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
 
-            Text("Automatic reconnect could not restore your session after \(max(attemptCount, 1)) attempts.")
-                .font(.system(size: 17, weight: .semibold, design: .rounded))
-                .foregroundStyle(Color.white.opacity(0.84))
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 620)
+            StreamLaunchOverlayLayout(
+                gameTitle: overlayInfo.title,
+                gameSubtitle: overlayInfo.subtitle,
+                statusTitle: statusTitle,
+                progress: 1.0,
+                summary: summary,
+                leadingAction: { EmptyView() }
+            )
 
-            Text("\(overlayInfo.subtitle) • \(overlayInfo.title)")
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
-                .foregroundStyle(Color.white.opacity(0.9))
-                .multilineTextAlignment(.center)
-
-            HStack(spacing: 16) {
-                Button("Reconnect", action: onReconnect)
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Color.black.opacity(0.86))
-                    .padding(.horizontal, 28)
-                    .padding(.vertical, 12)
-                    .background(StratixTheme.Colors.focusTint)
-                    .clipShape(Capsule())
-
-                Button("Exit Stream", action: onExit)
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Color.white)
-                    .padding(.horizontal, 28)
-                    .padding(.vertical, 12)
-                    .background(Color.white.opacity(0.14))
-                    .clipShape(Capsule())
-            }
-            .padding(.top, 4)
+            StreamLaunchReconnectButton(onReconnect: onReconnect)
+                .padding(.bottom, 28)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         }
-        .padding(.horizontal, 28)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct StreamLaunchReconnectButton: View {
+    let onReconnect: () -> Void
+    @FocusState private var isReconnectFocused: Bool
+
+    var body: some View {
+        Button(action: onReconnect) {
+            FocusAwareView { isFocused in
+                StreamLaunchChipButton(
+                    title: "Reconnect",
+                    systemImage: "arrow.clockwise",
+                    isFocused: isFocused
+                )
+            }
+        }
+        .focused($isReconnectFocused)
+        .prefersDefaultFocus(true, in: reconnectFocusNamespace)
+        .buttonStyle(CloudLibraryTVButtonStyle())
+        .gamePassDisableSystemFocusEffect()
+        .accessibilityIdentifier("stream_reconnect_button")
+        .accessibilityLabel("Reconnect stream")
+        .onAppear {
+            isReconnectFocused = true
+        }
+    }
+
+    @Namespace private var reconnectFocusNamespace
+}
+
+private struct StreamLaunchChipButton: View {
+    let title: String
+    let systemImage: String
+    let isFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.system(size: 18, weight: .bold))
+            Text(title)
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+        }
+        .foregroundStyle(StratixTheme.Colors.textPrimary)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+        .background(
+            Capsule(style: .continuous).fill(
+                Color.white.opacity(isFocused ? 0.14 : 0.07)
+            )
+        )
+        .overlay(
+            Capsule(style: .continuous)
+                .stroke(
+                    Color.white.opacity(isFocused ? 0.55 : 0.12),
+                    lineWidth: isFocused ? 2 : 1
+                )
+        )
     }
 }
 
@@ -181,14 +222,14 @@ private struct StreamLaunchBottomProgressBar: View {
     }
 }
 
-private struct StreamLaunchOverlayLayout: View {
+private struct StreamLaunchOverlayLayout<LeadingAction: View>: View {
     let gameTitle: String
     let gameSubtitle: String?
     let statusTitle: String
     let progress: Double
     let summary: String
     var waitLine: String? = nil
-    let onCancel: () -> Void
+    @ViewBuilder let leadingAction: () -> LeadingAction
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -196,7 +237,7 @@ private struct StreamLaunchOverlayLayout: View {
                 Spacer()
 
                 HStack(alignment: .bottom, spacing: 0) {
-                    StreamLaunchCancelButton(onCancel: onCancel)
+                    leadingAction()
                         .padding(.leading, 56)
                         .padding(.bottom, 28)
 
@@ -261,7 +302,9 @@ struct StreamPreparingOverlay: View {
             statusTitle: "Preparing Stream",
             progress: 0.08,
             summary: "Loading stream details and reserving a session.",
-            onCancel: onCancel
+            leadingAction: {
+                StreamLaunchCancelButton(onCancel: onCancel)
+            }
         )
     }
 }
@@ -281,12 +324,15 @@ struct StreamStatusOverlay: View {
             if overlayState.showsConnectionOverlay {
                 connectingOverlay
                     .transition(.opacity)
-            } else if showStatsHUD {
+            } else if showStatsHUD, overlayState.hasSession {
                 VStack {
                     HStack {
                         Spacer()
-                        StreamLifecycleBadge(lifecycle: overlayState.lifecycle)
-                            .padding(20)
+                        StreamLifecycleBadge(
+                            lifecycle: overlayState.lifecycle,
+                            isReconnecting: overlayState.isReconnecting
+                        )
+                        .padding(20)
                     }
                     Spacer()
                 }
@@ -320,7 +366,9 @@ struct StreamStatusOverlay: View {
                 progress: overlayState.lifecycle.overlayConnectionProgress,
                 summary: overlayState.lifecycle.overlayConnectionSummary,
                 waitLine: estimatedWaitLine,
-                onCancel: onDisconnect
+                leadingAction: {
+                    StreamLaunchCancelButton(onCancel: onDisconnect)
+                }
             )
         }
     }
@@ -336,21 +384,29 @@ struct StreamStatusOverlay: View {
 /// Compact lifecycle badge shown above the stream when the overlay is not open.
 private struct StreamLifecycleBadge: View {
     let lifecycle: StreamLifecycleState
+    var isReconnecting: Bool = false
 
     /// Renders the small colored lifecycle badge.
     var body: some View {
         HStack(spacing: 8) {
             Circle()
-                .fill(lifecycle.overlayStateColor)
+                .fill(statusColor)
                 .frame(width: 10, height: 10)
-            Text(lifecycle.overlayStateLabel)
+            Text(statusLabel)
                 .font(.caption)
-                .foregroundStyle(.white)
+                .foregroundStyle(StratixTheme.Colors.textPrimary)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(Color.black.opacity(0.6))
-        .clipShape(Capsule())
+        .streamStatusCapsuleBackground()
+    }
+
+    private var statusLabel: String {
+        isReconnecting ? "Reconnecting…" : lifecycle.overlayStateLabel
+    }
+
+    private var statusColor: Color {
+        isReconnecting ? .orange : lifecycle.overlayStateColor
     }
 }
 

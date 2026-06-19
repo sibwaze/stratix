@@ -108,8 +108,6 @@ private struct SideRailNavButton: View {
             return "side_rail_nav_home"
         case .library:
             return "side_rail_nav_library"
-        case .search:
-            return "side_rail_nav_search"
         case .consoles:
             return "side_rail_nav_consoles"
         }

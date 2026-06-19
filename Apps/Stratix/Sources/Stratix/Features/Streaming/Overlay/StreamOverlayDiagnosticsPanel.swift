@@ -18,14 +18,14 @@ struct StreamOverlayDetailsPanel: View {
     /// Renders the detail panel and keeps the requested focus target synchronized.
     var body: some View {
         ZStack {
-            Color.black.opacity(0.62).ignoresSafeArea()
+            Color.black.opacity(0.45).ignoresSafeArea()
 
             HStack {
                 GlassCard(
                     cornerRadius: 30,
-                    fill: Color.black.opacity(0.84),
-                    stroke: Color.white.opacity(0.12),
-                    shadowOpacity: 0.34
+                    fill: StreamStatusChipStyle.fill,
+                    stroke: StreamStatusChipStyle.stroke,
+                    shadowOpacity: 0
                 ) {
                     VStack(alignment: .leading, spacing: 0) {
                         header
@@ -100,8 +100,8 @@ struct StreamOverlayDetailsPanel: View {
                 if !overlayState.overlayInfo.metadataPills.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            ForEach(Array(overlayState.overlayInfo.metadataPills.enumerated()), id: \.offset) { _, text in
-                                pill(text)
+                            ForEach(overlayState.overlayInfo.metadataPills.indices, id: \.self) { index in
+                                pill(overlayState.overlayInfo.metadataPills[index])
                             }
                         }
                     }
@@ -230,9 +230,9 @@ struct StreamOverlayDetailsPanel: View {
     func infoCard<Content: View>(title: String, systemImage: String, @ViewBuilder content: () -> Content) -> some View {
         GlassCard(
             cornerRadius: 18,
-            fill: Color.white.opacity(0.04),
-            stroke: Color.white.opacity(0.08),
-            shadowOpacity: 0.06
+            fill: StreamStatusChipStyle.fill,
+            stroke: StreamStatusChipStyle.stroke,
+            shadowOpacity: 0
         ) {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
@@ -258,8 +258,7 @@ struct StreamOverlayDetailsPanel: View {
             .foregroundStyle(StratixTheme.Colors.textSecondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(Capsule().fill(Color.white.opacity(0.05)))
-            .overlay(Capsule().stroke(Color.white.opacity(0.08), lineWidth: 1))
+            .streamStatusCapsuleBackground()
     }
 
     /// Moves focus to the requested overlay control when the test harness asks for it.

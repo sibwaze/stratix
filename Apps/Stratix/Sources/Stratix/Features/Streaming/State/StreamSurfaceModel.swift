@@ -77,6 +77,18 @@ final class StreamSurfaceModel {
     var lastError: String? { diagnostics.telemetry.lastError }
     var hasRenderedFirstFrame: Bool { diagnostics.hasRenderedFirstFrame }
 
+    /// Summarizes eligible and failed renderer rungs for diagnostics HUD surfaces.
+    var rendererRungSummaryText: String? {
+        var segments: [String] = []
+        if !eligibleRungs.isEmpty {
+            segments.append("Available: \(eligibleRungs.joined(separator: " -> "))")
+        }
+        if !deadRungs.isEmpty {
+            segments.append("Failed this session: \(deadRungs.joined(separator: ", "))")
+        }
+        return segments.isEmpty ? nil : segments.joined(separator: "  ")
+    }
+
     /// Updates the currently attached video track.
     func setVideoTrack(_ track: AnyObject?) {
         videoTrack = track

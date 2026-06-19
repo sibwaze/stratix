@@ -25,7 +25,8 @@ struct GalleryFullscreenViewer: View {
 
             if !mediaItems.isEmpty {
                 TabView(selection: $selection) {
-                    ForEach(Array(mediaItems.enumerated()), id: \.element.id) { index, item in
+                    ForEach(mediaItems.indices, id: \.self) { index in
+                        let item = mediaItems[index]
                         ZStack {
                             Color.black.ignoresSafeArea()
 

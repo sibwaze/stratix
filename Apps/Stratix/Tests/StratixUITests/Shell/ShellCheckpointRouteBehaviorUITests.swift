@@ -36,7 +36,7 @@ final class ShellCheckpointRouteBehaviorUITests: ShellCheckpointUITestCase {
         XCUIRemote.shared.press(.menu)
         XCTAssertTrue(libraryRoot.waitForExistence(timeout: 8), "Library route should return after exiting detail")
 
-        selectSideRailNav("side_rail_nav_search", in: smokeApp)
+        selectLibrarySearchTab(in: smokeApp)
         let searchRoot = routeRoot("route_search_root", in: smokeApp)
         XCTAssertTrue(searchRoot.waitForExistence(timeout: 8), "Search route root should exist")
         let searchMinX = searchRoot.frame.minX
@@ -56,7 +56,7 @@ final class ShellCheckpointRouteBehaviorUITests: ShellCheckpointUITestCase {
             40,
             "Detail should remain visually inset relative to Home"
         )
-        XCTAssertLessThanOrEqual(abs(libraryMinX - searchMinX), 4, "Library and Search should share aligned browse-route padding")
+        XCTAssertLessThanOrEqual(abs(libraryMinX - searchMinX), 24, "Inline search should stay within the library route layout")
         XCTAssertLessThanOrEqual(abs(libraryMinX - detailMinX), 4, "Library and Detail should share aligned browse-route padding")
     }
 
@@ -146,7 +146,7 @@ final class ShellCheckpointRouteBehaviorUITests: ShellCheckpointUITestCase {
         XCTAssertTrue(smokeApp.windows.firstMatch.waitForExistence(timeout: 12), "Game Pass app window must load")
 
         _ = waitForFirstGameTile(in: smokeApp)
-        selectSideRailNav("side_rail_nav_search", in: smokeApp)
+        selectLibrarySearchTab(in: smokeApp)
 
         let searchRoot = routeRoot("route_search_root", in: smokeApp)
         XCTAssertTrue(searchRoot.waitForExistence(timeout: 8), "Search route root should exist")
@@ -170,7 +170,6 @@ final class ShellCheckpointRouteBehaviorUITests: ShellCheckpointUITestCase {
         _ = waitForFirstGameTile(in: smokeApp)
         openProfileRail(in: smokeApp)
 
-        XCTAssertTrue(smokeApp.buttons["profile_rail_consoles"].exists, "Profile page should expose Consoles")
         XCTAssertTrue(smokeApp.buttons["profile_rail_settings"].exists, "Profile page should expose Settings")
         XCTAssertTrue(smokeApp.buttons["profile_rail_signout"].exists, "Profile page should expose Sign Out")
     }

@@ -7,10 +7,14 @@ import XCTest
 class ShellCheckpointUITestCase: XCTestCase {
     var app: XCUIApplication!
     let sideRailNavIDs = [
-        "side_rail_nav_search",
         "side_rail_nav_home",
         "side_rail_nav_library",
         "side_rail_nav_consoles"
+    ]
+    let libraryTabIDs = [
+        "library_tab_my-games",
+        "library_tab_full-library",
+        "library_tab_search"
     ]
     let primaryRouteRootIDs = [
         "route_home_root",

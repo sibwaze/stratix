@@ -32,6 +32,17 @@ extension CloudLibrarySettingsView {
                     CloudLibraryToggleRow(title: "Low Latency Mode", subtitle: "Prioritize responsiveness over smoothing", isOn: streamBinding(\.lowLatencyMode))
                     CloudLibraryToggleRow(title: "Upscaling", subtitle: "Start on sample buffer, then promote to the best validated renderer", isOn: streamBinding(\.upscalingEnabled))
                     CloudLibraryToggleRow(title: "Show Stream Stats", subtitle: "Display FPS, bitrate, and RTT in-session", isOn: streamBinding(\.showStreamStats))
+                    CloudLibraryPickerRow(
+                        title: "Idle Disconnect",
+                        selection: Binding(
+                            get: { "\(streamBinding(\.idleDisconnectMinutes).wrappedValue) min" },
+                            set: { newValue in
+                                let minutes = Int(newValue.filter(\.isNumber)) ?? 30
+                                streamBinding(\.idleDisconnectMinutes).wrappedValue = minutes
+                            }
+                        ),
+                        options: ["15 min", "30 min"]
+                    )
                     CloudLibraryToggleRow(title: "Auto Reconnect", subtitle: "Try reconnecting after transport drops", isOn: streamBinding(\.autoReconnect))
                     CloudLibraryToggleRow(title: "Packet Loss Protection", subtitle: "Trade a little sharpness for stability on unstable links", isOn: streamBinding(\.packetLossProtection))
                     CloudLibraryToggleRow(title: "Prefer IPv6", subtitle: "Use IPv6 when the network supports it", isOn: streamBinding(\.preferIPv6))

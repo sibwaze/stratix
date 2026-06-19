@@ -9,12 +9,16 @@ import XCTest
 #endif
 
 final class SideRailFocusCoordinatorTests: XCTestCase {
+    func testTrailingActions_doesNotInjectDefaultSettingsAction() {
+        XCTAssertTrue(SideRailFocusCoordinator.trailingActions(from: []).isEmpty)
+    }
+
     func testPreferredEntryTarget_alwaysFocusesLibraryNavItem() {
         XCTAssertEqual(
             SideRailFocusCoordinator.preferredEntryTarget(
                 activeUtilityRoute: .settings,
                 trailingActions: [.init(id: "settings", systemImage: "gearshape", accessibilityLabel: "Settings")],
-                selectedNavID: .search
+                selectedNavID: .home
             ),
             .nav(.library)
         )

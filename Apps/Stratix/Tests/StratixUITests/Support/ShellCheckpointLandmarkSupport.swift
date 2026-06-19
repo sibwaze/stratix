@@ -318,7 +318,7 @@ extension ShellCheckpointUITestCase {
             return
         }
 
-        if (focusedSideRailNav(in: app)?.identifier == "side_rail_nav_search") || app.buttons["side_rail_nav_search"].hasFocus {
+        if app.buttons["library_tab_search"].hasFocus {
             for _ in 0..<maxRightPresses {
                 XCUIRemote.shared.press(.right)
                 if waitForFocus(on: searchField, timeout: 0.5) {

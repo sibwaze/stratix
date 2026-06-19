@@ -43,8 +43,6 @@ struct CloudLibraryHeroBackgroundState {
             return inputs.homeFocusedHeroBackgroundURL ?? inputs.homeHeroBackgroundURL
         case .library:
             return inputs.libraryFocusedHeroBackgroundURL ?? inputs.libraryHeroBackgroundURL
-        case .search:
-            return inputs.searchHeroBackgroundURL
         case .consoles:
             return nil
         }
@@ -66,7 +64,6 @@ extension CloudLibrarySceneModel {
     enum HeroBackgroundRoute: String {
         case home
         case library
-        case search
         case consoles
     }
 

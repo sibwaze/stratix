@@ -13,22 +13,24 @@ enum SideRailFocusTarget: Hashable {
 
 /// Shared ordering and focus-entry rules for the side rail so the view layer stays mostly declarative.
 enum SideRailFocusCoordinator {
-    private static let preferredNavOrder: [SideRailNavID] = [.search, .home, .library, .consoles]
+    private static let preferredNavOrder: [SideRailNavID] = [.home, .library, .consoles]
 
     /// Reorders nav items into the canonical shell order even if the source state arrives unsorted.
     static func orderedNavItems(from navItems: [SideRailNavItemViewState]) -> [SideRailNavItemViewState] {
-        let navItemsByID = Dictionary(
-            navItems.map { ($0.id, $0) },
-            uniquingKeysWith: { current, _ in current }
-        )
-        return preferredNavOrder.compactMap { navItemsByID[$0] }
+        guard !navItems.isEmpty else { return [] }
+        var ordered: [SideRailNavItemViewState] = []
+        ordered.reserveCapacity(preferredNavOrder.count)
+        for id in preferredNavOrder {
+            if let item = navItems.first(where: { $0.id == id }) {
+                ordered.append(item)
+            }
+        }
+        return ordered
     }
 
-    /// Guarantees the rail always has at least one trailing action destination.
+    /// Returns trailing rail actions as provided by shell state without injecting defaults.
     static func trailingActions(from actions: [SideRailActionViewState]) -> [SideRailActionViewState] {
-        actions.isEmpty
-            ? [.init(id: "settings", systemImage: "gearshape", accessibilityLabel: "Settings")]
-            : actions
+        actions
     }
 
     /// Chooses the focus destination when the rail expands from content entry.
@@ -162,11 +164,6 @@ extension SideRailNavigationView {
 
     /// Defers focus assignment one runloop so the expanded rail can become focusable first.
     private func scheduleRailFocus(_ updateFocus: @escaping @MainActor () -> Void) {
-        pendingFocusTask?.cancel()
-        pendingFocusTask = Task { @MainActor in
-            await Task.yield()
-            guard !Task.isCancelled else { return }
-            updateFocus()
-        }
+        MainActorDeferredTask.schedule(task: &pendingFocusTask, updateFocus)
     }
 }

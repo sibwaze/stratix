@@ -9,22 +9,22 @@ extension StreamOverlayDetailsPanel {
     var statsCard: some View {
         infoCard(title: "Connection", systemImage: "waveform.path.ecg") {
             VStack(alignment: .leading, spacing: 12) {
-                statRow([
-                    ("Frame Rate", session.stats.framesPerSecond.map { String(format: "%.0f fps", $0) } ?? "—"),
-                    ("Bitrate", session.stats.bitrateKbps.map { "\($0 / 1000) Mbps" } ?? "—"),
-                    ("RTT", session.stats.roundTripTimeMs.map { String(format: "%.0f ms", $0) } ?? "—"),
-                    ("Packet Loss", session.stats.packetsLost.map(String.init) ?? "—")
-                ])
-                statRow([
+                statMetricsRow(
+                    ("Frame Rate", overlayFormattedFrameRate),
+                    ("Bitrate", overlayFormattedBitrate),
+                    ("RTT", overlayFormattedRTT),
+                    ("Packet Loss", overlayFormattedPacketLoss)
+                )
+                statMetricsRow(
                     ("Input", overlayInputResolutionText),
                     ("Output", overlayOutputResolutionText),
                     ("Upscaler", surfaceModel.activeRendererMode),
-                    ("Render Delay", surfaceModel.renderLatencyMs.map { String(format: "%.1f ms", $0) } ?? "—")
-                ])
+                    ("Render Delay", overlayFormattedRenderDelay)
+                )
                 if !overlayRendererDiagnostics.isEmpty {
-                    statRow(overlayRendererDiagnostics)
+                    statDynamicRow(overlayRendererDiagnostics)
                 }
-                if let rungSummary = overlayRungSummaryText {
+                if let rungSummary = surfaceModel.rendererRungSummaryText {
                     Text(rungSummary)
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .foregroundStyle(StratixTheme.Colors.textSecondary)
@@ -61,13 +61,48 @@ extension StreamOverlayDetailsPanel {
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.white.opacity(0.06), lineWidth: 1))
     }
 
-    /// Renders one compact row of stats tiles.
-    func statRow(_ items: [(String, String)]) -> some View {
+    /// Renders one fixed row of stats tiles without per-render array allocation.
+    func statMetricsRow(
+        _ first: (String, String),
+        _ second: (String, String),
+        _ third: (String, String),
+        _ fourth: (String, String)
+    ) -> some View {
         HStack(spacing: 12) {
-            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+            statTile(label: first.0, value: first.1)
+            statTile(label: second.0, value: second.1)
+            statTile(label: third.0, value: third.1)
+            statTile(label: fourth.0, value: fourth.1)
+        }
+    }
+
+    /// Renders a variable-length stats row keyed by stable metric labels.
+    func statDynamicRow(_ items: [(String, String)]) -> some View {
+        HStack(spacing: 12) {
+            ForEach(items, id: \.0) { item in
                 statTile(label: item.0, value: item.1)
             }
         }
+    }
+
+    var overlayFormattedFrameRate: String {
+        session.stats.framesPerSecond.map { String(format: "%.0f fps", $0) } ?? "—"
+    }
+
+    var overlayFormattedBitrate: String {
+        session.stats.bitrateKbps.map { "\($0 / 1000) Mbps" } ?? "—"
+    }
+
+    var overlayFormattedRTT: String {
+        session.stats.roundTripTimeMs.map { String(format: "%.0f ms", $0) } ?? "—"
+    }
+
+    var overlayFormattedPacketLoss: String {
+        session.stats.packetsLost.map(String.init) ?? "—"
+    }
+
+    var overlayFormattedRenderDelay: String {
+        surfaceModel.renderLatencyMs.map { String(format: "%.1f ms", $0) } ?? "—"
     }
 
     /// Formats the stream input resolution for the overlay stats card.
@@ -119,17 +154,5 @@ extension StreamOverlayDetailsPanel {
             items.append(("Frame Loss", "\(framesLost)"))
         }
         return items
-    }
-
-    /// Summarizes the current and failed renderer rungs when available.
-    var overlayRungSummaryText: String? {
-        var segments: [String] = []
-        if !surfaceModel.eligibleRungs.isEmpty {
-            segments.append("Available: \(surfaceModel.eligibleRungs.joined(separator: " -> "))")
-        }
-        if !surfaceModel.deadRungs.isEmpty {
-            segments.append("Failed this session: \(surfaceModel.deadRungs.joined(separator: ", "))")
-        }
-        return segments.isEmpty ? nil : segments.joined(separator: "  ")
     }
 }
