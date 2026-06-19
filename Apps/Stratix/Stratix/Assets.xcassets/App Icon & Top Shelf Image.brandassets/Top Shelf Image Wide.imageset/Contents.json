@@ -1,0 +1,18 @@
+{
+  "images": [
+    {
+      "filename": "Stratix_Poster.png",
+      "idiom": "tv",
+      "scale": "1x"
+    },
+    {
+      "filename": "Stratix_Poster@2x.png",
+      "idiom": "tv",
+      "scale": "2x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}
